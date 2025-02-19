@@ -20,34 +20,27 @@ describe("[middleware-handlers] prepareApiFunction", () => {
   const res = {
     status: jest.fn(),
     send: jest.fn(),
-    locals: {},
   } as unknown as Response;
   const next = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    res.locals = {};
-  });
-
-  it("sends 404 error if integration is not configured", () => {
-    const emptyIntegrations = {};
-
-    prepareApiFunction(emptyIntegrations)(req, res, next);
-
-    expect(res.status).toBeCalledTimes(1);
-    expect(res.status).toBeCalledWith(404);
-    expect(res.send).toBeCalledTimes(1);
+    res.locals = {
+      alokai: {
+        metadata: {},
+      },
+    };
   });
 
   describe("if integration is configured", () => {
-    it("adds api function to res.locals", () => {
-      prepareApiFunction(integrations)(req, res, next);
+    it("adds api function to res.locals", async () => {
+      await prepareApiFunction(integrations)(req, res, next);
 
       expect(res.locals).toEqual(expect.objectContaining({ apiFunction }));
     });
 
-    it("calls next middleware", () => {
-      prepareApiFunction(integrations)(req, res, next);
+    it("calls next middleware", async () => {
+      await prepareApiFunction(integrations)(req, res, next);
 
       expect(next).toBeCalledTimes(1);
       expect(next).toBeCalledWith();

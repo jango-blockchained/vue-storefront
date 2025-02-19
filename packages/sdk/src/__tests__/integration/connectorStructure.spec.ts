@@ -1,5 +1,5 @@
 import { initSDK } from "../../bootstrap";
-import { buildModule } from "../../module/buildModule";
+import { buildModule } from "../../modules/buildModule";
 import { createModuleMock } from "../__mocks__/createModuleMock";
 
 describe("[ConnectorStructure]", () => {
@@ -11,10 +11,7 @@ describe("[ConnectorStructure]", () => {
     const extension = {};
 
     const sdkConfig = {
-      proxyModule1: buildModule<
-        ReturnType<typeof moduleMock>,
-        typeof extension
-      >(moduleMock, {}, extension),
+      proxyModule1: buildModule(moduleMock, {}, extension),
     };
 
     const sdk = initSDK(sdkConfig);
@@ -35,10 +32,7 @@ describe("[ConnectorStructure]", () => {
     const extension = {};
 
     const sdkConfig = {
-      proxyModule1: buildModule<
-        ReturnType<typeof moduleMock>,
-        typeof extension
-      >(moduleMock, {}, extension),
+      proxyModule1: buildModule(moduleMock, {}, extension),
     };
 
     const sdk = initSDK(sdkConfig);
@@ -66,10 +60,7 @@ describe("[ConnectorStructure]", () => {
     const extension = {};
 
     const sdkConfig = {
-      proxyModule1: buildModule<
-        ReturnType<typeof moduleMock>,
-        typeof extension
-      >(moduleMock, {}, extension),
+      proxyModule1: buildModule(moduleMock, {}, extension),
     };
 
     const sdk = initSDK(sdkConfig);

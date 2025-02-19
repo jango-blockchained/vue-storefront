@@ -1,20 +1,12 @@
-import type { RequestHandler } from "express";
 import { IntegrationsLoaded, MiddlewareContext } from "../../types";
+import { getApiFunction } from "./getApiFunction";
+import { getLogger, injectMetadata } from "../../logger";
 
 export function prepareApiFunction(
   integrations: IntegrationsLoaded
-): RequestHandler {
-  return (req, res, next) => {
-    const { integrationName, functionName } = req.params;
-
-    if (!integrations || !integrations[integrationName]) {
-      res.status(404);
-      res.send(
-        `"${integrationName}" integration is not configured. Please, check the request path or integration configuration.`
-      );
-
-      return;
-    }
+): (req, res, next) => Promise<any> {
+  return async (req, res, next) => {
+    const { integrationName, extensionName, functionName } = req.params;
 
     const {
       apiClient,
@@ -30,11 +22,12 @@ export function prepareApiFunction(
       extensions,
       customQueries,
       integrations,
-      getApiClient: (integrationKey: string) => {
-        if (!(integrationKey in integrations)) {
+      integrationTag: integrationName,
+      getApiClient: (integrationTag: string) => {
+        if (!(integrationTag in integrations)) {
           const keys = Object.keys(integrations);
           throw new Error(
-            `The specified integration key "${integrationKey}" was not found. Available integration keys are: ${keys}. Please ensure you're using the correct key or add the necessary integration configuration.`
+            `The specified integration key "${integrationTag}" was not found. Available integration keys are: ${keys}. Please ensure you're using the correct key or add the necessary integration configuration.`
           );
         }
 
@@ -44,10 +37,11 @@ export function prepareApiFunction(
           extensions: innerExtensions,
           customQueries: innerCustomQueries = {},
           initConfig: innerInitConfig,
-        } = integrations[integrationKey];
+        } = integrations[integrationTag];
 
         const innerMiddlewareContext: MiddlewareContext = {
           ...middlewareContext,
+          integrationTag,
           extensions: innerExtensions,
           customQueries: innerCustomQueries,
         };
@@ -74,9 +68,32 @@ export function prepareApiFunction(
       ...initConfig,
     });
 
-    const apiFunction = apiClientInstance.api[functionName];
+    // Pick the function from the namespaced if it exists, otherwise pick it from the shared integration
+    try {
+      const [fn, fnOrigin] = await getApiFunction(
+        apiClientInstance,
+        functionName,
+        extensionName
+      );
+      res.locals.apiFunction = fn;
+      res.locals.fnOrigin = fnOrigin;
+    } catch (e) {
+      if (e.errorBoundary) {
+        const logger = injectMetadata(getLogger(res), () => ({
+          alokai: {
+            scope: {
+              type: "endpoint" as const,
+            },
+            errorBoundary: e.errorBoundary,
+          },
+        }));
+        logger.error(e);
+      }
+      res.status(404);
+      res.send(e.message);
 
-    res.locals.apiFunction = apiFunction;
+      return;
+    }
 
     next();
   };

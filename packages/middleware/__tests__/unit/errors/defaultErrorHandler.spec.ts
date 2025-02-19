@@ -1,3 +1,4 @@
+import { logger } from "../../../__mocks__/logger";
 import { defaultErrorHandler } from "../../../src/errors/defaultErrorHandler";
 
 describe("defaultErrorHandler", () => {
@@ -5,6 +6,11 @@ describe("defaultErrorHandler", () => {
   const mockRes = {
     status: jest.fn(),
     send: jest.fn(),
+    locals: {
+      alokai: {
+        logger,
+      },
+    },
   };
 
   it("should send unmasked error for error codes >= 400 && < 500", () => {
@@ -15,7 +21,7 @@ describe("defaultErrorHandler", () => {
     defaultErrorHandler(error, mockReq as any, mockRes as any);
 
     expect(mockRes.status).toHaveBeenCalledWith(404);
-    expect(mockRes.send).toHaveBeenCalledWith(error);
+    expect(mockRes.send).toHaveBeenCalledWith({ message: error.message });
   });
 
   it("should send masked error for other error codes", () => {
